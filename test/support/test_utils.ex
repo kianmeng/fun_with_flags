@@ -27,41 +27,43 @@ defmodule FunWithFlags.TestUtils do
   end
 
   def clear_test_db do
-    unless Config.persist_in_ecto? do
+    unless Config.persist_in_ecto?() do
       use_redis_test_db()
 
       Redix.command!(@redis, ["DEL", "fun_with_flags"])
+
       Redix.command!(@redis, ["KEYS", "fun_with_flags:*"])
       |> delete_keys()
     end
   end
 
   defp delete_keys([]), do: 0
+
   defp delete_keys(keys) do
     Redix.command!(@redis, ["DEL" | keys])
   end
 
   def clear_cache do
-    if Config.cache? do
+    if Config.cache?() do
       FunWithFlags.Store.Cache.flush()
     end
   end
 
-  defmacro timetravel([by: offset], [do: body]) do
+  defmacro timetravel([by: offset], do: body) do
     quote do
-      fake_now = FunWithFlags.Timestamps.now + unquote(offset)
+      fake_now = FunWithFlags.Timestamps.now() + unquote(offset)
       # IO.puts("now:      #{FunWithFlags.Timestamps.now}")
       # IO.puts("offset:   #{unquote(offset)}")
       # IO.puts("fake_now: #{fake_now}")
 
-      with_mock(FunWithFlags.Timestamps, [
-        now: fn() ->
+      with_mock(FunWithFlags.Timestamps,
+        now: fn ->
           fake_now
         end,
-        expired?: fn(timestamp, ttl) ->
+        expired?: fn timestamp, ttl ->
           :meck.passthrough([timestamp, ttl])
         end
-      ]) do
+      ) do
         unquote(body)
       end
     end
@@ -81,10 +83,10 @@ defmodule FunWithFlags.TestUtils do
   end
 
   def reset_app_env_to_default_redis_config do
-    configure_redis_with([database: 5])
+    configure_redis_with(database: 5)
   end
 
   def on_elixir_15? do
-    Version.match?(System.version, ">= 1.15.0")
+    Version.match?(System.version(), ">= 1.15.0")
   end
 end

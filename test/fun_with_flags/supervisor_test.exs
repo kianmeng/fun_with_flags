@@ -31,24 +31,33 @@ defmodule FunWithFlags.SupervisorTest do
             },
             %{
               id: Redix,
-              start: {Redix, :start_link,
-               [
+              start:
+                {Redix, :start_link,
                  [
-                   host: "localhost",
-                   port: 6379,
-                   database: 5,
-                   name: FunWithFlags.Store.Persistent.Redis,
-                   sync_connect: false
-                 ]
-               ]},
+                   [
+                     host: "localhost",
+                     port: 6379,
+                     database: 5,
+                     name: FunWithFlags.Store.Persistent.Redis,
+                     sync_connect: false
+                   ]
+                 ]},
               type: :worker
             },
             %{
               id: FunWithFlags.Notifications.Redis,
               restart: :permanent,
-              start: {FunWithFlags.Notifications.Redis, :start_link, [
-                [host: "localhost", port: 6379, database: 5, name: :fun_with_flags_notifications, sync_connect: false]
-              ]},
+              start:
+                {FunWithFlags.Notifications.Redis, :start_link,
+                 [
+                   [
+                     host: "localhost",
+                     port: 6379,
+                     database: 5,
+                     name: :fun_with_flags_notifications,
+                     sync_connect: false
+                   ]
+                 ]},
               type: :worker
             }
           ]
@@ -74,16 +83,17 @@ defmodule FunWithFlags.SupervisorTest do
             },
             %{
               id: Redix,
-              start: {Redix, :start_link,
-               [
+              start:
+                {Redix, :start_link,
                  [
-                   host: "localhost",
-                   port: 6379,
-                   database: 5,
-                   name: FunWithFlags.Store.Persistent.Redis,
-                   sync_connect: false
-                 ]
-               ]},
+                   [
+                     host: "localhost",
+                     port: 6379,
+                     database: 5,
+                     name: FunWithFlags.Store.Persistent.Redis,
+                     sync_connect: false
+                   ]
+                 ]},
               type: :worker
             },
             %{
@@ -127,22 +137,26 @@ defmodule FunWithFlags.SupervisorTest do
     end
   end
 
-
   describe "initializing the config for the children (no cache)" do
     setup do
       # Capture the original cache config
       original_cache_config = Config.ets_cache_config()
 
       # Disable the cache for these tests.
-      Application.put_all_env(fun_with_flags: [cache: [
-        enabled: false, ttl: original_cache_config[:ttl]
-      ]])
+      Application.put_all_env(
+        fun_with_flags: [
+          cache: [
+            enabled: false,
+            ttl: original_cache_config[:ttl]
+          ]
+        ]
+      )
 
       # Restore the original config
-      on_exit fn ->
+      on_exit(fn ->
         Application.put_all_env(fun_with_flags: [cache: original_cache_config])
         assert ^original_cache_config = Config.ets_cache_config()
-      end
+      end)
     end
 
     @tag :redis_persistence
@@ -155,16 +169,17 @@ defmodule FunWithFlags.SupervisorTest do
           [
             %{
               id: Redix,
-              start: {Redix, :start_link,
-               [
+              start:
+                {Redix, :start_link,
                  [
-                   host: "localhost",
-                   port: 6379,
-                   database: 5,
-                   name: FunWithFlags.Store.Persistent.Redis,
-                   sync_connect: false
-                 ]
-               ]},
+                   [
+                     host: "localhost",
+                     port: 6379,
+                     database: 5,
+                     name: FunWithFlags.Store.Persistent.Redis,
+                     sync_connect: false
+                   ]
+                 ]},
               type: :worker
             }
           ]
@@ -184,16 +199,17 @@ defmodule FunWithFlags.SupervisorTest do
           [
             %{
               id: Redix,
-              start: {Redix, :start_link,
-               [
+              start:
+                {Redix, :start_link,
                  [
-                   host: "localhost",
-                   port: 6379,
-                   database: 5,
-                   name: FunWithFlags.Store.Persistent.Redis,
-                   sync_connect: false
-                 ]
-               ]},
+                   [
+                     host: "localhost",
+                     port: 6379,
+                     database: 5,
+                     name: FunWithFlags.Store.Persistent.Redis,
+                     sync_connect: false
+                   ]
+                 ]},
               type: :worker
             }
           ]

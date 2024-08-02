@@ -1,4 +1,4 @@
-name: Mix Tests
+name: CI
 
 on:
   push:
@@ -7,25 +7,20 @@ on:
     branches: [master, v2]
 
 jobs:
-  build:
-    name: Elixir ${{ matrix.elixir }} with OTP ${{ matrix.otp }}
+  test:
     runs-on: ubuntu-20.04
-
     strategy:
-      fail-fast: false
+      fail-fast: true
+      # https://hexdocs.pm/elixir/1.17.2/compatibility-and-deprecations.html
       matrix:
-        elixir:
-          - '1.16'
-          - '1.15'
-          - '1.14'
-        otp:
-          - '26.2'
-          - '26.1'
-          - '25.3'
-          - '24.3'
-        # exclude:
-          # - elixir: '1.13'
-          #   otp: '26.1'
+        include:
+          - pair:
+              elixir: 1.14
+              otp: 25.3
+          - pair:
+              elixir: 1.17
+              otp: 27.0
+            lint: lint
 
     services:
       postgres:
@@ -43,7 +38,6 @@ jobs:
         ports: ['6379:6379']
 
     steps:
-
       - name: Start Default MySQL 5.7
         run: sudo /etc/init.d/mysql start
 
@@ -56,13 +50,14 @@ jobs:
       - name: Set up Elixir and OTP
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: ${{ matrix.elixir }}
-          otp-version: ${{ matrix.otp }}
+          otp-version: ${{ matrix.pair.otp }}
+          elixir-version: ${{ matrix.pair.elixir }}
+          version-type: strict
 
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 'Restore cache for deps/ and _build/ directories'
+      - name: Restore cache for deps/ and _build/ directories
         uses: actions/cache@v4
         with:
           path: |
@@ -71,14 +66,27 @@ jobs:
           key: ${{ runner.os }}-mix-test-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: ${{ runner.os }}-mix-test-${{ matrix.elixir }}-${{ matrix.otp }}-
 
-      # - name: '[DEBUG] List cached dirs'
-      #   run: |
-      #     ls -la deps
-      #     ls -la _build
-      #     ls -la _build/test/lib
+      - name: Get deps
+        run: mix deps.get --check-locked
 
-      - name: Install Mix dependencies
-        run: mix deps.get
+      - name: Check format
+        run: mix format --check-formatted
+        if: ${{ matrix.lint }}
+
+      - name: Check unused deps
+        run: mix deps.unlock --check-unused
+        if: ${{ matrix.lint }}
+
+      - name: Deps compilation
+        run: mix deps.compile
+
+      - name: Check compile warnings
+        run: mix compile --no-optional-deps --warnings-as-errors
+        if: ${{ matrix.lint }}
+
+      - name: Run credo
+        run: mix credo
+        if: ${{ matrix.lint }}
 
       - name: Create and migrate the DB on Postgres
         run: |
